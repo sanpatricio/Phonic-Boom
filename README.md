@@ -9,10 +9,6 @@ output.html) will contain a ul/li list of mp3s formatted based on the meta tags
 associated with the file.  
 
 Use:
-$ ./pbIndexer.pl ~/public_html/music
-This will index the files located in ~/public_html/music/ and put the results 
-in the directory from which PB was run: ./output.html
-
-$ ./pbIndexer.pl ~/public_html/music ~/public_html/mymusic.html
-This will index the files located in ~/public_html/music/ and put the results 
-into the ~/public_html/mymusic.html file
+    $ ./pbIndexer.pl ~/public_html/music ~/public_html/mymusic.html /music/artist/
+    This will index the files located in ~/public_html/music/ and put the results 
+    into the ~/public_html/mymusic.html file
