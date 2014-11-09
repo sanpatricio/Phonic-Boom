@@ -1,51 +1,105 @@
 #!/usr/bin/perl
 
-###################################
-#
-# pbIndexer.pl makes use of MP3::Tag, found at http://search.cpan.org/~ilyaz/MP3-Tag-0.9706/Tag.pm.
-#
-###################################
-
 use warnings;
 use strict;
 use MP3::Tag;
+use File::Basename;
 
-my ($source, $destination) = ($ARGV[0], $ARGV[1]);
+###################################
+#
+# Phonic Boom - pbIndexer.pl
+# ==========================
+#     Author: Patrick Riggs (Github: sanpatricio)
+#     November 2014
+#
+# Instructions:
+# -------------
+#     Requires MP3::Tag, found at http://search.cpan.org/~ilyaz/MP3-Tag-0.9706/Tag.pm.
+#     Run Phonic Boom from the command line as such:
+#
+#     $ ./pbIndexer.pl $source $destination $webdir
+#
+# Arguments:
+# ----------
+# $source      - This should be the filesystem path of the directory where the mp3s are contained.
+#                Put all the files of the same artist in the same directory.  Don't split albums
+#                into separate subdirectories.  pbIndexer will group and sort them properly (grouped
+#                by album, then sorted by track number) so long as the metadata is correctly specified.  
+#
+# $destination - This will be the directory and filename where you wand pbIndexer to output the HTML
+#                stub file.  This will not be proper HTML but simply a <ul> list with pbIndexer css
+#                classes for styling.  It is meant to be included in another, proper HTML page.
+#
+# $webdir      - This argument is used to specify the download link in the <a href=""> statement.
+#
+###################################
 
-if($source and $destination) {
-    my ($title, $track, $artist, $album, $comment, $year, $genre);
+my ($source, $destination, $webdir) = @ARGV;
 
-    my @files = glob("$source/*.mp3");
-    my $outfile = $destination . "/output.html";
-    print "Reading .mp3s from $source\n";
-    print "Writing to output destination at $outfile\n";
+my %music;
 
-    open(OUT, ">$outfile") or die "Can't open file output.html: $!";
+if($source) {
+    print "    Reading from source: $source\n";
+    my ($title, $track, $artist, $album, $comment, $year, $genre); # Variables for the file metadata
+    my @files = glob("$source/*.mp3");                             # Put the file content in an array
+    my $outfile = $destination;                                    # The file where the output goes
+    my $prevAlbum = "";
+    if (!$destination) { $outfile = "./output.html"; }             # If no destination out file is given, use ./output.html
 
-    print OUT "<ul>\n";
+    my $count = $#files;
+    print "    Files detected: " . ($count + 1) . "\n";
+    print "    Writing to output destination at $outfile\n";
+
+    open(OUT, ">$outfile") or die "    Can't open file $outfile: $!";
+    print OUT "<ol>\n";
 
     foreach my $file(@files) {
-        open(DATA, "<$file") or die "Can't open file $file: $!";
+        open(DATA, "<$file") or die "    Can't open file $file: $!";
 
         my $mp3 = MP3::Tag->new($file);
         ($title, $track, $artist, $album, $comment, $year, $genre) = $mp3->autoinfo();
         $comment = $mp3->comment();
 
-        print OUT &output($file);
+        my $link     = $webdir;
+        my $filename = basename($file); 
 
-        close(DATA) or die "Can't close file $file: $!";
+        $music {$title} = {
+            title    => "$title",
+            album    => "$album",
+            track    => "$track",
+            artist   => "$artist",
+            year     => "$year",
+            genre    => "$genre",
+            comment  => "$comment",
+            link     => "$link/$filename"
+        };
+ 
+        $prevAlbum = $album;
+        close(DATA) or die "    Can't close file $file: $!";
         undef $mp3;
     }
-    print OUT "</ul>\n";
 
-    close(OUT) or die "Can't close outptu.html: $!";
-    sub output {
-        my ($link) = @_;
-        my $html   .= "    <li><span class=\"artist\">$artist</span>, <span class=\"album\">$album</span> ($year) - Track $track: <a href='$link'>$title</a> <span class=\"miscData\">- $genre, $comment</span></li>\n";
-        return $html;
+    my @keys = sort { 
+        $music{$a}{album} cmp $music{$b}{album} 
+            or
+        $music{$a}{track} cmp $music{$b}{track}
+    } keys %music;
+
+    foreach my $key (@keys) {
+        my $trackTitle = $music{$key}{title};
+        print OUT "<li class='pbTrack'>$music{$key}{album} - $music{$key}{track} <a href='$music{$key}{link}'>";
+        printf OUT "%-20s</a></li>\n ", $key, $music{$key};
     }
+
+    print OUT "</ol>\n";
+    close(OUT) or die "    Can't close $outfile: $!";
+    print "    Finished.\n\n";
 }
 else {
-    print "You must specify a directory source (where the mp3s are) and a destination for output.html.\n";
-    print "Example: \$ ./script.pl source destination\n\$ ./orpheus.pl music .\n\n";
+    print "    Source couldn't be read.  Execution block skipped.\n";
+    print "    You must specify the following: \n";
+    print "    1) Directory source (where the mp3s files are)\n";
+    print "    2) A destination file for the output HTML stub\n";
+    print "    3) The web directory where the files are (to build the download link)\n";
+    print "    Example: \$ ./pbIndexer.pl source destination\ni.e. \$ ./pbIndexer.pl ~/public_html/music ~/public_html ~/music/artist/\n\n";
 }
