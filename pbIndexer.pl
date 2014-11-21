@@ -26,11 +26,11 @@ use File::Basename;
 #                into separate subdirectories.  pbIndexer will group and sort them properly (grouped
 #                by album, then sorted by track number) so long as the metadata is correctly specified.  
 #
-# $destination - This will be the directory and filename where you wand pbIndexer to output the HTML
+# $destination - This will be the directory and filename where you want pbIndexer to output the HTML
 #                stub file.  This will not be proper HTML but simply a <ul> list with pbIndexer css
 #                classes for styling.  It is meant to be included in another, proper HTML page.
 #
-# $webdir      - This argument is used to specify the download link in the <a href=""> statement.
+# $webdir      - This argument is used to specify the download link for the <a href=""> statement.
 #
 ###################################
 
@@ -50,11 +50,8 @@ if($source) {
     print "    Files detected: " . ($count + 1) . "\n";
     print "    Writing to output destination at $outfile\n";
 
-    open(OUT, ">$outfile") or die "    Can't open file $outfile: $!";
-    print OUT "<ol>\n";
-
     foreach my $file(@files) {
-        open(DATA, "<$file") or die "    Can't open file $file: $!";
+        open my $dataFH, '<', $file or die "    Can't open file $file: $!";
 
         my $mp3 = MP3::Tag->new($file);
         ($title, $track, $artist, $album, $comment, $year, $genre) = $mp3->autoinfo();
@@ -74,8 +71,7 @@ if($source) {
             link     => "$link/$filename"
         };
  
-        $prevAlbum = $album;
-        close(DATA) or die "    Can't close file $file: $!";
+        close($dataFH) or die "    Can't close file $file: $!";
         undef $mp3;
     }
 
@@ -85,14 +81,23 @@ if($source) {
         $music{$a}{track} cmp $music{$b}{track}
     } keys %music;
 
+    open my $outFH, '>', $outfile or die "    Can't open file $outfile: $!";
+    
     foreach my $key (@keys) {
+        if($prevAlbum ne $music{$key}{album}) {
+            if(length($prevAlbum == 0)) { print "</ul>\n";}
+            print $outFH "<h3>$album</h3>\n";
+            print $outFH "<ul>\n";
+        }
         my $trackTitle = $music{$key}{title};
-        print OUT "<li class='pbTrack'>$music{$key}{album} - $music{$key}{track} <a href='$music{$key}{link}'>";
-        printf OUT "%-20s</a></li>\n ", $key, $music{$key};
+        print $outFH "    <li class='pbTrack'>$music{$key}{album} - $music{$key}{track} <a href='$music{$key}{link}'>";
+        printf $outFH "%-20s</a></li>\n ", $key, $music{$key};
+        
+        $prevAlbum = $music{$key}{album};
     }
 
-    print OUT "</ol>\n";
-    close(OUT) or die "    Can't close $outfile: $!";
+    print $outFH "</ul>\n";
+    close($outFH) or die "    Can't close $outfile: $!";
     print "    Finished.\n\n";
 }
 else {
