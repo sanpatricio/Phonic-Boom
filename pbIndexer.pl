@@ -85,12 +85,12 @@ if($source) {
     
     foreach my $key (@keys) {
         if($prevAlbum ne $music{$key}{album}) {
-            if(length($prevAlbum == 0)) { print "</ul>\n";}
-            print $outFH "<h3>$album</h3>\n";
-            print $outFH "<ul>\n";
+            if(length($prevAlbum) > 0) { print $outFH "</ul>\n";}
+            print $outFH "<h3>$music{$key}{album}</h3>\n<ul>\n";
         }
+        
         my $trackTitle = $music{$key}{title};
-        print $outFH "    <li class='pbTrack'>$music{$key}{album} - $music{$key}{track} <a href='$music{$key}{link}'>";
+        print $outFH "    <li class='pbTrack'>$music{$key}{track} <a href='$music{$key}{link}'>";
         printf $outFH "%-20s</a></li>\n ", $key, $music{$key};
         
         $prevAlbum = $music{$key}{album};
