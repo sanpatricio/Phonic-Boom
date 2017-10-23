@@ -1,8 +1,10 @@
 Phonic Boom
 =======
 
-Phonic Boom is a command-line tool used to read music files and their meta-data
-from a directory and outputs the details into a flat HTML file for web use.
+Phonic Boom is a command-line tool used to read a directory of music files to
+output an unordered list HTML stub.  The list order is arranged around the file 
+metadata and can handle multiple albums in the same directory, separating each
+into different <ul> groupings.
 
 Once pbIndexer.pl is run from a command line, the resulting output (defaults to
 output.html) will contain a ul/li list of mp3s formatted based on the meta tags
